@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Dashboard Físico-Nutricional · Vinotinto FC Ecuador</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;font-size:14px}
@@ -313,13 +314,10 @@ tbody tr:hover td{background:#fef9f9}
     <div class="login-logo">⚽</div>
     <div class="login-title">Vinotinto FC Ecuador</div>
     <div class="login-sub">Dashboard Físico-Nutricional · Acceso restringido</div>
-    <div class="login-error" id="login-error">Usuario o contraseña incorrectos.</div>
-    <input type="text" class="login-field" id="login-user" placeholder="Usuario"
-      onkeydown="if(event.key==='Enter')doLogin()" autocomplete="username">
-    <input type="password" class="login-field" id="login-pass" placeholder="Contraseña"
-      onkeydown="if(event.key==='Enter')doLogin()" autocomplete="current-password">
-    <button class="login-btn" onclick="doLogin()">Ingresar al Dashboard</button>
-    <div class="login-version">v2.0 · Semana 17 · 2026 · Control de accesos activo</div>
+    <div class="login-error" id="login-error" style="display:none"></div>
+    <p style="font-size:12px;color:#888;margin:12px 0 4px;text-align:center">Acceso solo para personal autorizado del club.</p>
+    <button class="login-btn" onclick="netlifyIdentity.open('login')" style="margin-top:8px">Ingresar al Dashboard</button>
+    <div class="login-version">v3.0 · Semana 18 · 2026 · Netlify Identity activo</div>
   </div>
 </div>
 
@@ -1764,35 +1762,10 @@ renderResumen();
 renderAlertas();
 
 // ══════════════════════════════════════════════════════════════
-// SISTEMA DE AUTENTICACIÓN Y CONTROL DE ACCESOS
+// AUTENTICACIÓN — Netlify Identity
 // ══════════════════════════════════════════════════════════════
 
-// Usuarios predeterminados — el admin puede agregar/suspender desde el panel
-const DEFAULT_USERS = [
-  {id:1, username:'admin',       password:'Vinotinto2026!', role:'admin',  name:'Administrador',     active:true},
-  {id:2, username:'kevin',       password:'Kevin2026',      role:'admin',  name:'Kevin Astudillo',   active:true},
-  {id:3, username:'medico',      password:'Med2026',        role:'viewer', name:'Médico del Club',   active:true},
-  {id:4, username:'preparador',  password:'Prep2026',       role:'viewer', name:'Preparador Físico', active:true},
-  {id:5, username:'nutricion',   password:'Nut2026',        role:'viewer', name:'Nutricionista',     active:true},
-];
-
-function getUsers(){
-  const stored = localStorage.getItem('vt_fc_users');
-  if(!stored){
-    localStorage.setItem('vt_fc_users', JSON.stringify(DEFAULT_USERS));
-    return JSON.parse(JSON.stringify(DEFAULT_USERS));
-  }
-  const list = JSON.parse(stored);
-  // Asegurar que los usuarios predeterminados existan (sin sobrescribir cambios)
-  DEFAULT_USERS.forEach(du => {
-    if(!list.find(u => u.id === du.id)) list.push(du);
-  });
-  return list;
-}
-
-function saveUsers(users){
-  localStorage.setItem('vt_fc_users', JSON.stringify(users));
-}
+let currentUser = null;
 
 function getLogs(){
   const s = localStorage.getItem('vt_fc_logs');
@@ -1807,90 +1780,69 @@ function addLog(msg, icon){
   localStorage.setItem('vt_fc_logs', JSON.stringify(logs));
 }
 
-let currentUser = null;
-
-function doLogin(){
-  const inputUser = (document.getElementById('login-user').value || '').trim().toLowerCase();
-  const inputPass = document.getElementById('login-pass').value || '';
-  const errEl = document.getElementById('login-error');
-
-  const users = getUsers();
-  const found = users.find(u => u.username.toLowerCase() === inputUser && u.password === inputPass);
-
-  errEl.style.display = 'none';
-
-  if(!found){
-    errEl.textContent = '❌ Usuario o contraseña incorrectos.';
-    errEl.style.display = 'block';
-    return;
-  }
-  if(found.active === false){
-    errEl.textContent = '⛔ Acceso suspendido. Contacta al administrador del club.';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  currentUser = found;
+function showDashboard(user){
   document.getElementById('login-overlay').style.display = 'none';
-  document.getElementById('login-pass').value = '';
-
-  // Mostrar info de usuario en el header
-  document.getElementById('current-user-info').textContent = '👤 ' + found.name;
+  const name = (user.user_metadata && user.user_metadata.full_name) ? user.user_metadata.full_name : user.email;
+  document.getElementById('current-user-info').textContent = '👤 ' + name;
   document.getElementById('logout-btn').style.display = 'inline-block';
-
-  // Mostrar tab de admin solo si el rol lo permite
-  if(found.role === 'admin'){
+  const roles = (user.app_metadata && user.app_metadata.roles) ? user.app_metadata.roles : [];
+  currentUser = { name: name, email: user.email, role: roles.includes('admin') ? 'admin' : 'viewer' };
+  if(currentUser.role === 'admin'){
     document.querySelectorAll('.admin-only').forEach(el => {
       el.style.display = el.tagName === 'BUTTON' ? 'inline-block' : 'block';
     });
   }
+  addLog('Inicio de sesión: ' + name, '🔓');
+}
 
-  addLog('Inicio de sesión: ' + found.name, '🔓');
+function doLogin(){
+  netlifyIdentity.open('login');
 }
 
 function doLogout(){
   if(!confirm('¿Cerrar sesión?')) return;
-  addLog('Cierre de sesión: ' + currentUser.name, '🔒');
+  if(currentUser) addLog('Cierre de sesión: ' + currentUser.name, '🔒');
+  netlifyIdentity.logout();
+}
+
+netlifyIdentity.on('init', function(user){
+  if(user) showDashboard(user);
+});
+
+netlifyIdentity.on('login', function(user){
+  netlifyIdentity.close();
+  showDashboard(user);
+});
+
+netlifyIdentity.on('logout', function(){
   currentUser = null;
   document.getElementById('login-overlay').style.display = 'flex';
-  document.getElementById('login-error').style.display = 'none';
   document.getElementById('current-user-info').textContent = '';
   document.getElementById('logout-btn').style.display = 'none';
   document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-  // Volver al tab resumen
   showTab('resumen', document.querySelector('.tab-btn'));
-}
+});
 
 function renderAdminPanel(){
   if(!currentUser || currentUser.role !== 'admin') return;
-  const users = getUsers();
 
-  // Cards de usuarios
-  let html = '';
-  users.forEach(u => {
-    const isActive = u.active !== false;
-    const roleLabel = u.role === 'admin' ? '🛡️ Administrador' : '👁️ Visualizador';
-    html += `
-    <div class="user-card${isActive ? '' : ' inactive'}">
-      <div class="uc-top">
-        <div>
-          <div class="uc-name">${u.name}</div>
-          <div class="uc-role">${roleLabel} · @${u.username}</div>
-        </div>
-        <span class="uc-status-badge ${isActive ? 'active' : 'inactive'}">
-          ${isActive ? '✅ Activo' : '🚫 Suspendido'}
-        </span>
+  // Panel de gestión vía Netlify Identity
+  const grid = document.getElementById('admin-user-grid');
+  if(grid) grid.innerHTML = `
+    <div style="background:#eaf4fb;border:1px solid #aed6f1;border-radius:10px;padding:24px;text-align:center;grid-column:1/-1">
+      <div style="font-size:32px;margin-bottom:10px">🔐</div>
+      <div style="font-size:15px;font-weight:700;color:#1a5276;margin-bottom:8px">Gestión de usuarios — Netlify Identity</div>
+      <div style="font-size:12px;color:#555;max-width:480px;margin:0 auto 18px;line-height:1.6">
+        Para <strong>invitar</strong> a un nuevo usuario, <strong>suspender acceso</strong> o <strong>eliminar</strong> a alguien que ya no está en el club, usa el panel de Netlify. Los cambios aplican de forma inmediata y global.
       </div>
-      <div class="uc-actions">
-        ${isActive
-          ? `<button class="uc-btn deactivate" onclick="toggleUser(${u.id},false)">🚫 Suspender acceso</button>`
-          : `<button class="uc-btn activate" onclick="toggleUser(${u.id},true)">✅ Reactivar acceso</button>`
-        }
-        <button class="uc-btn reset-pw" onclick="resetPassword(${u.id})">🔑 Cambiar clave</button>
+      <a href="https://app.netlify.com" target="_blank" style="background:#7b1c1c;color:#fff;padding:10px 26px;border-radius:20px;text-decoration:none;font-size:13px;font-weight:600;display:inline-block">
+        Abrir Panel de Netlify →
+      </a>
+      <div style="font-size:11px;color:#888;margin-top:14px">
+        En Netlify: tu sitio → Identity → Users → Invite / Block / Delete
       </div>
     </div>`;
-  });
-  document.getElementById('admin-user-grid').innerHTML = html;
+
 
   // Log de actividad
   const logs = getLogs();
@@ -1909,80 +1861,9 @@ function renderAdminPanel(){
   document.getElementById('admin-log-list').innerHTML = logHtml;
 }
 
-function toggleUser(id, activate){
-  const users = getUsers();
-  const u = users.find(x => x.id === id);
-  if(!u) return;
-
-  // Protección: no suspender al último admin activo
-  if(!activate && u.role === 'admin'){
-    const activeAdmins = users.filter(x => x.role === 'admin' && x.active !== false);
-    if(activeAdmins.length <= 1){
-      alert('⚠️ No puedes suspender al último administrador activo.');
-      return;
-    }
-  }
-
-  // No puede suspenderse a sí mismo
-  if(!activate && currentUser && u.id === currentUser.id){
-    alert('⚠️ No puedes suspender tu propia cuenta mientras estás activo.');
-    return;
-  }
-
-  u.active = activate;
-  saveUsers(users);
-  addLog((activate ? 'Acceso reactivado' : 'Acceso suspendido') + ': ' + u.name, activate ? '✅' : '🚫');
-  renderAdminPanel();
-}
-
-function resetPassword(id){
-  const users = getUsers();
-  const u = users.find(x => x.id === id);
-  if(!u) return;
-  const newPass = prompt('Nueva contraseña para ' + u.name + ' (@' + u.username + '):');
-  if(newPass === null) return;
-  if(!newPass || newPass.trim().length < 4){
-    alert('La contraseña debe tener al menos 4 caracteres.');
-    return;
-  }
-  u.password = newPass.trim();
-  saveUsers(users);
-  addLog('Contraseña actualizada: ' + u.name, '🔑');
-  alert('✅ Contraseña actualizada para ' + u.name);
-}
-
-function addNewUser(){
-  const name     = (document.getElementById('nu-name').value || '').trim();
-  const username = (document.getElementById('nu-user').value || '').trim().toLowerCase();
-  const password = (document.getElementById('nu-pass').value || '').trim();
-  const role     = document.getElementById('nu-role').value;
-
-  if(!name || !username || !password){
-    alert('⚠️ Completa todos los campos antes de agregar el usuario.');
-    return;
-  }
-  if(password.length < 4){
-    alert('⚠️ La contraseña debe tener al menos 4 caracteres.');
-    return;
-  }
-
-  const users = getUsers();
-  if(users.find(u => u.username.toLowerCase() === username)){
-    alert('⚠️ El nombre de usuario "' + username + '" ya existe.');
-    return;
-  }
-
-  const newUser = {id: Date.now(), username, password, role, name, active: true};
-  users.push(newUser);
-  saveUsers(users);
-  addLog('Usuario creado: ' + name + ' (@' + username + ')', '➕');
-
-  document.getElementById('nu-name').value = '';
-  document.getElementById('nu-user').value = '';
-  document.getElementById('nu-pass').value = '';
-  renderAdminPanel();
-  alert('✅ Usuario "' + name + '" agregado correctamente.');
-}
+function toggleUser(){ window.open('https://app.netlify.com', '_blank'); }
+function resetPassword(){ window.open('https://app.netlify.com', '_blank'); }
+function addNewUser(){ window.open('https://app.netlify.com', '_blank'); }
 
 // Extender showTab para cargar admin panel cuando se abre ese tab
 const _origShowTab = showTab;
