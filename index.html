@@ -304,6 +304,43 @@ tbody tr:hover td{background:#fef9f9}
   .cmp-metrics-grid{grid-template-columns:1fr}
 }
 
+
+/* ═══ REDISENO PRO ════════════════════════════════════════════ */
+.alert-strip{background:#fadbd8;border:1px solid #e74c3c;border-radius:8px;padding:9px 18px;margin:10px 18px 0;display:none;align-items:center;gap:10px;flex-wrap:wrap}
+.alert-strip-label{font-size:12px;font-weight:700;color:#922b21}
+.alert-pill{background:#fff;border:1px solid #e74c3c;border-radius:20px;padding:3px 10px;font-size:11px;color:#922b21;white-space:nowrap}
+.kpi-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:12px 18px;background:#1a1a2e}
+.kpi-card{background:rgba(255,255,255,.08);border-radius:8px;padding:10px 14px;text-align:center;border:1px solid rgba(255,255,255,.1)}
+.kpi-num{font-size:22px;font-weight:700;line-height:1.1;color:#fff}
+.kpi-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.5);margin-top:2px}
+.kpi-green .kpi-num{color:#5DCAA5}.kpi-red .kpi-num{color:#F09595}.kpi-amber .kpi-num{color:#FAC775}
+.nav-pro{background:#1a1a2e;padding:8px 16px;display:flex;gap:10px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.08);align-items:flex-end}
+.nav-group-wrap{display:flex;flex-direction:column;gap:3px}
+.nav-group-label{font-size:9px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.5px;padding-left:4px}
+.nav-group-pro{display:flex;gap:2px;background:rgba(255,255,255,.06);border-radius:8px;padding:3px}
+.tab-btn-pro{border:none;background:none;padding:6px 12px;border-radius:6px;font-size:12px;color:rgba(255,255,255,.55);cursor:pointer;white-space:nowrap;transition:all .15s}
+.tab-btn-pro:hover{color:#fff;background:rgba(255,255,255,.08)}
+.tab-btn-pro.active{background:rgba(192,57,43,.3);color:#fff;font-weight:600}
+.player-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:16px}
+.p-card{background:#fff;border-radius:10px;padding:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:4px solid #ccc}
+.p-card.verde{border-left-color:#27ae60}.p-card.amarillo{border-left-color:#e67e22}.p-card.rojo{border-left-color:#c0392b}
+.p-card-name{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:2px}
+.p-card-pos{font-size:10px;color:#888;text-transform:uppercase;margin-bottom:8px;letter-spacing:.3px}
+.p-card-tags{display:flex;flex-wrap:wrap;gap:4px}
+.p-tag{font-size:9px;padding:2px 7px;border-radius:20px;font-weight:600}
+.p-tag-v{background:#d5f5e3;color:#1e8449}.p-tag-a{background:#fdebd0;color:#d35400}.p-tag-r{background:#fadbd8;color:#922b21}
+.decision-panel{background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:16px}
+.dp-title{font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:12px}
+.dp-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f5f5f5}
+.dp-row:last-child{border-bottom:none}
+.dp-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.dp-text{font-size:12px;flex:1;color:#1a1a2e}
+.dp-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;white-space:nowrap}
+.dp-urgente{background:#fadbd8;color:#922b21}.dp-seguir{background:#fdebd0;color:#d35400}.dp-positivo{background:#d5f5e3;color:#1e8449}
+.resumen-top{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.section-label-pro{font-size:11px;font-weight:700;color:#1a1a2e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #f0f0f0}
+@media(max-width:800px){.kpi-bar{grid-template-columns:repeat(3,1fr)}.resumen-top{grid-template-columns:1fr}.player-grid{grid-template-columns:repeat(2,1fr)}}
+/* ═══════════════════════════════════════════════════════════ */
 </style>
 </head>
 <body>
@@ -340,22 +377,44 @@ tbody tr:hover td{background:#fef9f9}
     <button class="logout-btn" onclick="doLogout()" style="display:none" id="logout-btn">Cerrar sesión</button>
   </div>
 </div>
+<div id="alert-strip" class="alert-strip"></div>
 
-<nav class="tabs">
-  <button class="tab-btn active" onclick="showTab('resumen',this)">📊 Resumen</button>
-  <button class="tab-btn" onclick="showTab('composicion',this)">🏋️ Composición</button>
-  <button class="tab-btn" onclick="showTab('movilidad',this)">🦵 Movilidad</button>
-  <button class="tab-btn" onclick="showTab('core',this)">🔄 Core FMS</button>
-  <button class="tab-btn" onclick="showTab('fuerza',this)">💪 Fuerza</button>
-  <button class="tab-btn" onclick="showTab('pliometria',this)">🚀 Pliometría</button>
-  <button class="tab-btn" onclick="showTab('velocidad',this)">⚡ Velocidad</button>
-  <button class="tab-btn" onclick="showTab('carga',this)">📈 Carga ACWR</button>
-  <button class="tab-btn" onclick="showTab('alertas',this)">🚨 Alertas</button>
-  <button class="tab-btn" onclick="showTab('evolucion',this)">📉 Evolución</button>
-  <button class="tab-btn" onclick="showTab('comparativo',this)">🔄 Comparativo</button>
-  <button class="tab-btn" onclick="showTab('ficha',this)">👤 Ficha Individual</button>
-  <button class="tab-btn admin-only" id="tab-btn-admin" onclick="showTab('admin',this)">🔐 Control Accesos</button>
+<nav class="nav-pro">
+  <div class="nav-group-wrap">
+    <div class="nav-group-label">General</div>
+    <div class="nav-group-pro">
+      <button class="tab-btn tab-btn-pro active" onclick="showTab('resumen',this)">Resumen</button>
+      <button class="tab-btn tab-btn-pro" onclick="showTab('alertas',this)">Alertas</button>
+    </div>
+  </div>
+  <div class="nav-group-wrap">
+    <div class="nav-group-label">Fisico</div>
+    <div class="nav-group-pro">
+      <button class="tab-btn tab-btn-pro" onclick="showTab('composicion',this)">Composicion</button>
+      <button class="tab-btn tab-btn-pro" onclick="showTab('movilidad',this)">Movilidad</button>
+      <button class="tab-btn tab-btn-pro" onclick="showTab('core',this)">Core FMS</button>
+      <button class="tab-btn tab-btn-pro" onclick="showTab('fuerza',this)">Fuerza</button>
+      <button class="tab-btn tab-btn-pro" onclick="showTab('pliometria',this)">Pliometria</button>
+      <button class="tab-btn tab-btn-pro" onclick="showTab('velocidad',this)">Velocidad</button>
+    </div>
+  </div>
+  <div class="nav-group-wrap">
+    <div class="nav-group-label">Carga y evolucion</div>
+    <div class="nav-group-pro">
+      <button class="tab-btn tab-btn-pro" onclick="showTab('carga',this)">Carga ACWR</button>
+      <button class="tab-btn tab-btn-pro" onclick="showTab('evolucion',this)">Evolucion</button>
+      <button class="tab-btn tab-btn-pro" onclick="showTab('comparativo',this)">Comparativo</button>
+    </div>
+  </div>
+  <div class="nav-group-wrap">
+    <div class="nav-group-label">Individual</div>
+    <div class="nav-group-pro">
+      <button class="tab-btn tab-btn-pro" onclick="showTab('ficha',this)">Ficha</button>
+      <button class="tab-btn tab-btn-pro admin-only" id="tab-btn-admin" onclick="showTab('admin',this)">Admin</button>
+    </div>
+  </div>
 </nav>
+<div class="kpi-bar" id="kpi-bar"></div>
 
 <div class="content">
 
@@ -367,6 +426,19 @@ tbody tr:hover td{background:#fef9f9}
       <div class="rango-item"><div class="rd rd-v"></div><strong>VERDE:</strong>&nbsp;%Grasa ≤10.5 · Pliegues &lt;45mm · %Músculo ≥45.5 · IS 90-110% · FMS 3 · Salto ≥26%</div>
       <div class="rango-item"><div class="rd rd-a"></div><strong>AMARILLO:</strong>&nbsp;%Grasa 10.5-11.5 · Pliegues 45-50mm · %Músculo 44-45.49 · IS 85-115% · FMS 2 · Salto 23-26%</div>
       <div class="rango-item"><div class="rd rd-r"></div><strong>ROJO:</strong>&nbsp;%Grasa &gt;11.5 · Pliegues &gt;50mm · %Músculo &lt;44 · IS fuera de 85-115% · FMS 1 · Salto &lt;23%</div>
+    </div>
+  </div>
+
+  <div class="resumen-top">
+    <div>
+      <div class="section-label-pro">Estado del plantel — Semana actual</div>
+      <div class="player-grid" id="player-cards-grid"></div>
+    </div>
+    <div>
+      <div class="decision-panel">
+        <div class="dp-title">Acciones recomendadas</div>
+        <div id="decision-panel-body"></div>
+      </div>
     </div>
   </div>
   <div class="cards" id="cards-resumen"></div>
@@ -1762,10 +1834,108 @@ function showTab(id,btn){
   if(renders[id])renders[id]();
 }
 
+
+// == Semaforo por jugador ==
+function semaforo(grasa, acwr){
+  if(grasa!==null && grasa>11.5) return 'rojo';
+  if(acwr!==null && acwr>1.3) return 'rojo';
+  if(grasa!==null && grasa>10.5) return 'amarillo';
+  if(acwr!==null && acwr>1.1) return 'amarillo';
+  return 'verde';
+}
+
+// == KPI Bar ==
+function renderKPIBar(){
+  var data=getData(ULTIMA_SEM);
+  var bar=document.getElementById('kpi-bar');
+  if(!data||!data.length){bar.innerHTML='';return;}
+  var v=0,a=0,r=0,grasas=[],acwrs=[];
+  data.forEach(function(j){
+    var s=semaforo(j.grasa,j.acwr);
+    if(s==='verde')v++; else if(s==='amarillo')a++; else r++;
+    if(j.grasa!==null&&j.grasa!==undefined)grasas.push(j.grasa);
+    if(j.acwr!==null&&j.acwr!==undefined)acwrs.push(j.acwr);
+  });
+  var ag=grasas.length?(grasas.reduce(function(s,x){return s+x;},0)/grasas.length).toFixed(1):'-';
+  var aa=acwrs.length?(acwrs.reduce(function(s,x){return s+x;},0)/acwrs.length).toFixed(2):'-';
+  var acwrColor=parseFloat(aa)>1.3?'#F09595':parseFloat(aa)>1.1?'#FAC775':'#5DCAA5';
+  bar.innerHTML=''+
+    '<div class="kpi-card kpi-green"><div class="kpi-num">'+v+'</div><div class="kpi-lbl">En verde</div></div>'+
+    '<div class="kpi-card kpi-amber"><div class="kpi-num">'+a+'</div><div class="kpi-lbl">En amarillo</div></div>'+
+    '<div class="kpi-card kpi-red"><div class="kpi-num">'+r+'</div><div class="kpi-lbl">En rojo</div></div>'+
+    '<div class="kpi-card"><div class="kpi-num" style="color:#fff">'+ag+'%</div><div class="kpi-lbl">Grasa prom.</div></div>'+
+    '<div class="kpi-card"><div class="kpi-num" style="color:'+acwrColor+'">'+aa+'</div><div class="kpi-lbl">ACWR prom.</div></div>';
+}
+
+// == Alert Strip ==
+function renderAlertStrip(){
+  var data=getData(ULTIMA_SEM);
+  var strip=document.getElementById('alert-strip');
+  if(!data||!data.length){strip.style.display='none';return;}
+  var criticos=data.filter(function(j){return semaforo(j.grasa,j.acwr)==='rojo';});
+  if(!criticos.length){strip.style.display='none';return;}
+  var pills=criticos.map(function(j){
+    var rz=[];
+    if(j.grasa>11.5)rz.push('grasa '+j.grasa+'%');
+    if(j.acwr>1.3)rz.push('ACWR '+j.acwr);
+    return '<span class="alert-pill">'+j.jugador+' &middot; '+rz.join(', ')+'</span>';
+  }).join('');
+  var n=criticos.length;
+  strip.innerHTML='<span class="alert-strip-label">&#9888; '+n+' alerta'+(n>1?'s':'')+' critica'+(n>1?'s':'')+': </span>'+pills;
+  strip.style.display='flex';
+}
+
+// == Player Cards ==
+function renderPlayerCards(){
+  var data=getData(ULTIMA_SEM);
+  var grid=document.getElementById('player-cards-grid');
+  if(!data||!data.length){grid.innerHTML='';return;}
+  var sorted=data.slice().sort(function(a,b){
+    var o={rojo:0,amarillo:1,verde:2};
+    return o[semaforo(a.grasa,a.acwr)]-o[semaforo(b.grasa,b.acwr)];
+  });
+  grid.innerHTML=sorted.map(function(j){
+    var s=semaforo(j.grasa,j.acwr);
+    var tags='';
+    if(j.grasa!==null&&j.grasa!==undefined)tags+='<span class="p-tag p-tag-'+(j.grasa>11.5?'r':j.grasa>10.5?'a':'v')+'">Grasa '+j.grasa+'%</span>';
+    if(j.acwr!==null&&j.acwr!==undefined)tags+='<span class="p-tag p-tag-'+(j.acwr>1.3?'r':j.acwr>1.1?'a':'v')+'">ACWR '+j.acwr+'</span>';
+    if(j.fms!==null&&j.fms!==undefined&&j.fms>0)tags+='<span class="p-tag p-tag-'+(j.fms<2?'r':j.fms<3?'a':'v')+'">FMS '+j.fms+'</span>';
+    return '<div class="p-card '+s+'"><div class="p-card-name">'+j.jugador+'</div><div class="p-card-pos">'+j.posicion+'</div><div class="p-card-tags">'+tags+'</div></div>';
+  }).join('');
+}
+
+// == Decision Panel ==
+function renderDecisionPanel(){
+  var data=getData(ULTIMA_SEM);
+  var body=document.getElementById('decision-panel-body');
+  if(!data||!data.length){body.innerHTML='';return;}
+  var acc=[];
+  data.forEach(function(j){
+    if(j.grasa!==null&&j.grasa>11.5)acc.push({p:'urgente',t:'Revisar nutricional: '+j.jugador+' (grasa '+j.grasa+'%)'});
+    if(j.acwr!==null&&j.acwr>1.3)acc.push({p:'urgente',t:'Reducir carga: '+j.jugador+' (ACWR '+j.acwr+')'});
+    if(j.acwr!==null&&j.acwr>1.1&&j.acwr<=1.3)acc.push({p:'seguir',t:'Monitorear carga: '+j.jugador+' (ACWR '+j.acwr+')'});
+    if(j.grasa!==null&&j.grasa>10.5&&j.grasa<=11.5)acc.push({p:'seguir',t:'Controlar grasa: '+j.jugador+' ('+j.grasa+'%)'});
+  });
+  var enVerde=data.filter(function(j){return semaforo(j.grasa,j.acwr)==='verde';}).length;
+  if(enVerde>0)acc.push({p:'positivo',t:enVerde+' jugadores en zona verde - mantener plan'});
+  var o={urgente:0,seguir:1,positivo:2};
+  acc.sort(function(a,b){return o[a.p]-o[b.p];});
+  var col={urgente:'#c0392b',seguir:'#e67e22',positivo:'#27ae60'};
+  var bg={urgente:'dp-urgente',seguir:'dp-seguir',positivo:'dp-positivo'};
+  var lab={urgente:'Urgente',seguir:'Seguir',positivo:'Bien'};
+  body.innerHTML=acc.slice(0,6).map(function(a){
+    return '<div class="dp-row"><div class="dp-dot" style="background:'+col[a.p]+'"></div><div class="dp-text">'+a.t+'</div><span class="dp-badge '+bg[a.p]+'">'+lab[a.p]+'</span></div>';
+  }).join('');
+}
+
 // ══ Init (se llama despues de cargar datos desde Supabase) ══
 function initDashboard(){
   populateWeekSelects();
   populatePlayerSelects();
+  renderKPIBar();
+  renderAlertStrip();
+  renderPlayerCards();
+  renderDecisionPanel();
   renderResumen();
   renderAlertas();
 }
