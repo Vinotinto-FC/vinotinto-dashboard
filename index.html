@@ -10,7 +10,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;font-size:14px}
 .header{background:linear-gradient(135deg,#5c0a0a,#7b1c1c,#9b2226);color:#fff;padding:16px 28px;display:flex;align-items:center;gap:18px;box-shadow:0 3px 12px rgba(0,0,0,.3)}
-.header-logo{width:52px;height:52px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid rgba(255,255,255,.3)}
+.header-logo{width:52px;height:52px;flex-shrink:0;overflow:hidden;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid rgba(255,255,255,.3)}
 .header-text h1{font-size:18px;font-weight:700}
 .header-text p{font-size:11px;opacity:.75;margin-top:2px}
 .header-right{margin-left:auto;text-align:right}
@@ -342,36 +342,6 @@ tbody tr:hover td{background:#fef9f9}
 @media(max-width:800px){.kpi-bar{grid-template-columns:repeat(3,1fr)}.resumen-top{grid-template-columns:1fr}.player-grid{grid-template-columns:repeat(2,1fr)}}
 /* ═══════════════════════════════════════════════════════════ */
 
-/* == Módulo de Lesiones == */
-.lesion-card{background:#fff;border-radius:10px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:4px solid #c0392b;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.lesion-avatar{width:38px;height:38px;border-radius:50%;background:#fadbd8;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.lesion-info{flex:1;min-width:160px}
-.lesion-nombre{font-size:14px;font-weight:700;color:#1a1a2e}
-.lesion-detalle{font-size:12px;color:#666;margin-top:2px}
-.lesion-dias{text-align:right;flex-shrink:0}
-.lesion-dias-num{font-size:22px;font-weight:700;color:#c0392b;line-height:1}
-.lesion-dias-lbl{font-size:10px;color:#888;text-transform:uppercase}
-.lesion-retorno{font-size:11px;color:#27ae60;margin-top:2px}
-.btn-resolver{border:none;background:#d5f5e3;color:#1e8449;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0}
-.btn-resolver:hover{background:#1e8449;color:#fff}
-.form-lesion{background:#fff;border-radius:10px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:16px}
-.form-lesion h3{font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:14px}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.form-group{display:flex;flex-direction:column;gap:4px}
-.form-group.full{grid-column:1/-1}
-.form-group label{font-size:11px;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:.3px}
-.form-group select,.form-group input,.form-group textarea{border:1px solid #e0e0e0;border-radius:6px;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;box-sizing:border-box}
-.form-group select:focus,.form-group input:focus,.form-group textarea:focus{border-color:#8e1b1b}
-.btn-registrar{background:#8e1b1b;color:#fff;border:none;padding:9px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-top:6px}
-.btn-registrar:hover{background:#c0392b}
-.historial-table{width:100%;border-collapse:collapse;font-size:12px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.historial-table th{background:#f8f8f8;padding:8px 12px;text-align:left;font-weight:700;color:#444;font-size:11px;text-transform:uppercase;letter-spacing:.3px}
-.historial-table td{padding:8px 12px;border-bottom:1px solid #f5f5f5;color:#333}
-.historial-table tr:last-child td{border-bottom:none}
-.badge-resuelto{background:#d5f5e3;color:#1e8449;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
-.badge-activo{background:#fadbd8;color:#922b21;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
-.sin-lesiones{text-align:center;padding:30px;color:#aaa;font-size:14px}
-@media(max-width:600px){.form-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -397,10 +367,9 @@ tbody tr:hover td{background:#fef9f9}
 </div>
 
 <div class="header">
-  <div class="header-logo"><img src="logo.png" alt="Vinotinto FC" style="height:52px;width:52px;object-fit:contain;border-radius:50%;background:#fff;padding:3px;box-shadow:0 2px 8px rgba(0,0,0,.25)"></div>
+  <div class="header-logo"><img src="LOGOTIPO_VINOTINTO_FC.png" alt="Vinotinto FC" style="width:100%;height:100%;object-fit:contain;border-radius:50%;background:#fff;padding:3px;box-shadow:0 2px 8px rgba(0,0,0,.25)"></div>
   <div class="header-text">
     <h1>Dashboard Físico-Nutricional · Vinotinto FC Ecuador</h1>
-    <p>Protocolo ISAK · Sistema de Control de Rendimiento · Resp: Kevin Astudillo</p>
   </div>
   <div class="header-right" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
     <div class="fecha-badge">🕐 Generado: 10/06/2026 12:31 · Semana 18 · 27 jugadores</div>
@@ -416,7 +385,6 @@ tbody tr:hover td{background:#fef9f9}
     <div class="nav-group-pro">
       <button class="tab-btn tab-btn-pro active" onclick="showTab('resumen',this)">Resumen</button>
       <button class="tab-btn tab-btn-pro" onclick="showTab('alertas',this)">Alertas</button>
-      <button class="tab-btn tab-btn-pro" onclick="showTab('lesiones',this)">Lesiones</button>
     </div>
   </div>
   <div class="nav-group-wrap">
@@ -691,71 +659,6 @@ tbody tr:hover td{background:#fef9f9}
 
 <!-- ══ TAB ALERTAS ══ -->
 
-<!-- ══ TAB LESIONES ══════════════════════════════════════ -->
-<div id="tab-lesiones" class="tab-panel">
-
-  <!-- Lesionados activos -->
-  <div class="section-label-pro">Lesionados activos</div>
-  <div id="lesiones-activas-list"></div>
-
-  <!-- Formulario nuevo registro -->
-  <div class="form-lesion" style="margin-top:20px">
-    <h3>Registrar nueva lesión</h3>
-    <form id="form-lesion" onsubmit="registrarLesion(event)">
-      <div class="form-grid">
-        <div class="form-group">
-          <label>Jugador</label>
-          <select id="les-jugador" required>
-            <option value="">— selecciona —</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Fecha de la lesión</label>
-          <input type="date" id="les-fecha" required>
-        </div>
-        <div class="form-group">
-          <label>Zona afectada</label>
-          <select id="les-zona" required>
-            <option value="">— selecciona —</option>
-            <option>Muslo</option><option>Rodilla</option><option>Tobillo</option>
-            <option>Pie</option><option>Cadera</option><option>Hombro</option>
-            <option>Espalda baja</option><option>Isquiotibial</option>
-            <option>Gemelo/Sóleo</option><option>Cabeza/Cuello</option><option>Otro</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Tipo</label>
-          <select id="les-tipo" required>
-            <option value="">— selecciona —</option>
-            <option>Muscular (desgarro)</option><option>Muscular (contractura)</option>
-            <option>Ligamento (esguince)</option><option>Ligamento (rotura)</option>
-            <option>Tendinitis</option><option>Contusión</option>
-            <option>Fractura</option><option>Sobrecarga</option><option>Otro</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Diagnóstico (opcional)</label>
-          <input type="text" id="les-diagnostico" placeholder="ej. Desgarro grado II recto femoral">
-        </div>
-        <div class="form-group">
-          <label>Retorno estimado</label>
-          <input type="date" id="les-retorno">
-        </div>
-        <div class="form-group full">
-          <label>Notas adicionales</label>
-          <textarea id="les-notas" rows="2" placeholder="Contexto clínico, observaciones..."></textarea>
-        </div>
-      </div>
-      <button type="submit" class="btn-registrar">Guardar lesión</button>
-      <span id="les-msg" style="font-size:12px;margin-left:12px;color:#27ae60"></span>
-    </form>
-  </div>
-
-  <!-- Historial -->
-  <div class="section-label-pro" style="margin-top:20px">Historial completo</div>
-  <div id="lesiones-historial-tabla"></div>
-
-</div>
 <!-- ═══════════════════════════════════════════════════════ -->
 
 <div id="tab-alertas" class="tab-panel">
@@ -1530,7 +1433,7 @@ function renderComparativo() {
     if (!pA) continue;
 
     let mejoras = 0, empeoramientos = 0;
-    metricCols.forEach(m => {
+    CMP_METRICS.forEach(m => {
       const d = cmpDir(m[0], pA[m[0]] ?? null, pB[m[0]] ?? null);
       if (d === 'good') mejoras++;
       else if (d === 'bad') empeoramientos++;
@@ -1937,135 +1840,6 @@ function showTab(id,btn){
 
 
 
-// == Módulo Lesiones ==
-
-function renderLesiones(){
-  var activos = ALL_LESIONES.filter(function(l){ return !l.resuelto; });
-  var listEl = document.getElementById('lesiones-activas-list');
-
-  // Poblar select de jugadores en el formulario
-  var sel = document.getElementById('les-jugador');
-  if(sel){
-    var data = getData(ULTIMA_SEM) || [];
-    sel.innerHTML = '<option value="">— selecciona —</option>';
-    data.forEach(function(j){
-      var op = document.createElement('option');
-      op.value = j.jugador; op.textContent = j.jugador;
-      sel.appendChild(op);
-    });
-    // Fecha hoy por defecto
-    var hoy = new Date().toISOString().split('T')[0];
-    var fEl = document.getElementById('les-fecha');
-    if(fEl && !fEl.value) fEl.value = hoy;
-  }
-
-  if(!activos.length){
-    listEl.innerHTML = '<div class="sin-lesiones">Sin lesionados activos esta semana.</div>';
-  } else {
-    var hoy = new Date();
-    listEl.innerHTML = activos.map(function(l){
-      var nombre = l.jugadores ? l.jugadores.nombre : '—';
-      var fechaLes = l.fecha ? new Date(l.fecha) : null;
-      var diasLes = fechaLes ? Math.floor((hoy - fechaLes)/(1000*60*60*24)) : '?';
-      var retornoStr = '';
-      if(l.retorno_estimado){
-        var retFecha = new Date(l.retorno_estimado);
-        var diasRet = Math.ceil((retFecha - hoy)/(1000*60*60*24));
-        retornoStr = diasRet > 0
-          ? '<div class="lesion-retorno">Retorno en ~' + diasRet + ' días (' + l.retorno_estimado + ')</div>'
-          : '<div class="lesion-retorno" style="color:#e67e22">Retorno estimado vencido</div>';
-      }
-      return '<div class="lesion-card">' +
-        '<div class="lesion-avatar">🏥</div>' +
-        '<div class="lesion-info">' +
-          '<div class="lesion-nombre">' + nombre + '</div>' +
-          '<div class="lesion-detalle">' + (l.zona||'') + (l.tipo?' · '+l.tipo:'') + (l.diagnostico?' — '+l.diagnostico:'') + '</div>' +
-          (l.notas ? '<div class="lesion-detalle" style="color:#999">' + l.notas + '</div>' : '') +
-          retornoStr +
-        '</div>' +
-        '<div class="lesion-dias"><div class="lesion-dias-num">' + diasLes + '</div><div class="lesion-dias-lbl">días</div></div>' +
-        '<button class="btn-resolver" onclick="marcarResuelto(\'' + l.id + '\')">Resuelto</button>' +
-      '</div>';
-    }).join('');
-  }
-
-  // Historial
-  var histEl = document.getElementById('lesiones-historial-tabla');
-  if(!ALL_LESIONES.length){
-    histEl.innerHTML = '<div class="sin-lesiones">Sin registros de lesiones.</div>';
-    return;
-  }
-  histEl.innerHTML = '<table class="historial-table"><thead><tr>' +
-    '<th>Jugador</th><th>Fecha</th><th>Zona</th><th>Tipo</th><th>Retorno est.</th><th>Estado</th>' +
-    '</tr></thead><tbody>' +
-    ALL_LESIONES.map(function(l){
-      var nombre = l.jugadores ? l.jugadores.nombre : '—';
-      return '<tr>' +
-        '<td><strong>' + nombre + '</strong></td>' +
-        '<td>' + (l.fecha || '—') + '</td>' +
-        '<td>' + (l.zona || '—') + '</td>' +
-        '<td>' + (l.tipo || '—') + '</td>' +
-        '<td>' + (l.retorno_estimado || '—') + '</td>' +
-        '<td><span class="' + (l.resuelto ? 'badge-resuelto' : 'badge-activo') + '">' + (l.resuelto ? 'Resuelto' : 'Activo') + '</span></td>' +
-      '</tr>';
-    }).join('') +
-    '</tbody></table>';
-}
-
-async function registrarLesion(event){
-  event.preventDefault();
-  var msg = document.getElementById('les-msg');
-  msg.textContent = 'Guardando...';
-
-  var jugNombre = document.getElementById('les-jugador').value;
-  var fecha     = document.getElementById('les-fecha').value;
-  var zona      = document.getElementById('les-zona').value;
-  var tipo      = document.getElementById('les-tipo').value;
-  var diag      = document.getElementById('les-diagnostico').value.trim();
-  var retorno   = document.getElementById('les-retorno').value;
-  var notas     = document.getElementById('les-notas').value.trim();
-
-  // Buscar jugador_id
-  var { data: jug } = await sb.from('jugadores').select('id').eq('nombre', jugNombre).single();
-  if(!jug){ msg.style.color='#c0392b'; msg.textContent = 'Jugador no encontrado'; return; }
-
-  var fila = {
-    jugador_id: jug.id, fecha: fecha, zona: zona, tipo: tipo,
-    diagnostico: diag || null,
-    retorno_estimado: retorno || null,
-    notas: notas || null,
-    resuelto: false,
-    registrado_por: currentUser ? currentUser.nombre : null,
-  };
-
-  var { error } = await sb.from('lesiones').insert(fila);
-  if(error){
-    msg.style.color='#c0392b';
-    msg.textContent = 'Error: ' + error.message;
-  } else {
-    msg.style.color='#27ae60';
-    msg.textContent = 'Lesión registrada.';
-    document.getElementById('form-lesion').reset();
-    // Recargar lesiones
-    var { data: lesData } = await sb.from('lesiones').select('*, jugadores(nombre)').order('fecha', { ascending: false });
-    ALL_LESIONES = lesData || [];
-    renderLesiones();
-    renderPlayerCards();
-    renderAlertStrip();
-    setTimeout(function(){ msg.textContent=''; }, 3000);
-  }
-}
-
-async function marcarResuelto(id){
-  var { error } = await sb.from('lesiones').update({ resuelto: true }).eq('id', id);
-  if(!error){
-    var { data: lesData } = await sb.from('lesiones').select('*, jugadores(nombre)').order('fecha', { ascending: false });
-    ALL_LESIONES = lesData || [];
-    renderLesiones();
-    renderPlayerCards();
-    renderAlertStrip();
-  }
-}
 
 // == Semaforo por jugador ==
 function semaforo(grasa, acwr){
@@ -2175,7 +1949,6 @@ function initDashboard(){
   renderAlertStrip();
   renderPlayerCards();
   renderDecisionPanel();
-  renderLesiones();
   renderResumen();
   renderAlertas();
 }
@@ -2184,7 +1957,8 @@ function initDashboard(){
 const { createClient } = supabase;
 const sb = createClient(
   'https://zfxhypznicicwoaknpiw.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmeGh5cHpuaWNpY3dvYWtucGl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNzg4MTIsImV4cCI6MjA5Njg1NDgxMn0.3dCcwLe23CvP2prjwZ9AZkRxJDsDRw66yEI6P1rpNXE'
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmeGh5cHpuaWNpY3dvYWtucGl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNzg4MTIsImV4cCI6MjA5Njg1NDgxMn0.3dCcwLe23CvP2prjwZ9AZkRxJDsDRw66yEI6P1rpNXE',
+  { auth: { persistSession: false } }
 );
 // ─────────────────────────────────────────────────────────────
 
@@ -2299,16 +2073,6 @@ async function doLogout(){
   document.querySelectorAll('.admin-only').forEach(el=>el.style.display='none');
   showTab('resumen',document.querySelector('.tab-btn'));
 }
-
-// Restaurar sesion activa al recargar la pagina
-window.addEventListener('load', async () => {
-  const { data: { session } } = await sb.auth.getSession();
-  if(session){
-    const { data: perfil } = await sb.from('perfiles').select('*').eq('id', session.user.id).single();
-    if(perfil && perfil.activo!==false) entrarAlDashboard(perfil);
-    else await sb.auth.signOut();
-  }
-});
 
 async function renderAdminPanel(){
   if(!currentUser || currentUser.rol !== 'admin') return;
