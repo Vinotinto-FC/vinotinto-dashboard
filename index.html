@@ -874,6 +874,7 @@ function populatePlayerSelects(){
 // ══ TAB RESUMEN ══════════════════════
 function renderResumen(){
   const week=parseInt(document.getElementById('f-week-res').value)||ULTIMA_SEM;
+  document.getElementById('resumen-titulo').textContent='Plantel Completo — Semana '+week;
   let data=getData(week);
   const pos=document.getElementById('f-pos-res').value;
   const sem=document.getElementById('f-sem-res').value;
