@@ -4,302 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Dashboard Físico-Nutricional · Vinotinto FC Ecuador</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js">
-// ── GPS Module ─────────────────────────────────────────────────
-let GPS_ALL = [];
-let GPS_LOADED = false;
-let _gpsLoading = false;
-let _gpsCharts = {};
-
-async function cargarDatosGPS(){
-  if(GPS_LOADED || _gpsLoading) return;
-  _gpsLoading = true;
-
-  // Mostrar indicador de carga si el tab GPS está visible
-  const kpisEl = document.getElementById('gps-kpis');
-  if(kpisEl) kpisEl.innerHTML = '<p style="color:#aaa;font-size:13px">&#9203; Cargando datos GPS...</p>';
-
-  try{
-    // Cargar en dos lotes para superar el límite de 1000 filas de Supabase
-    const [r1, r2] = await Promise.all([
-      sb.from('gps_sesiones').select('*, jugadores(nombre,posicion)')
-        .order('fecha',{ascending:true}).range(0, 999),
-      sb.from('gps_sesiones').select('*, jugadores(nombre,posicion)')
-        .order('fecha',{ascending:true}).range(1000, 2999)
-    ]);
-    const data = [...(r1.data||[]), ...(r2.data||[])];
-    if(!data.length){ _gpsLoading=false; return; }
-    GPS_ALL = data.map(r=>({
-      ...r,
-      nombre: r.jugadores?.nombre || '',
-      posicion: r.jugadores?.posicion || ''
-    }));
-    GPS_LOADED = true;
-    populateGPSFiltros();
-  } catch(e){
-    console.error('GPS load:',e);
-    if(kpisEl) kpisEl.innerHTML = '<p style="color:#e74c3c;font-size:13px">Error cargando datos GPS. Recarga la p&#225;gina.</p>';
-  } finally {
-    _gpsLoading = false;
-  }
-}
-
-function populateGPSFiltros(){
-  const fechas=[...new Set(GPS_ALL.map(r=>r.fecha))].sort().reverse();
-  const selF=document.getElementById('gps-sel-fecha');
-  if(!selF) return;
-  selF.innerHTML=fechas.map(f=>{
-    const tipo=GPS_ALL.find(r=>r.fecha===f)?.tipo_sesion||'';
-    const d=new Date(f+'T12:00:00');
-    const label=d.toLocaleDateString('es-EC',{day:'2-digit',month:'short'})+' — '+tipo;
-    return `<option value="${f}">${label}</option>`;
-  }).join('');
-
-  const sems=[...new Set(GPS_ALL.map(r=>r.semana).filter(Boolean))].sort((a,b)=>b-a);
-  const selS=document.getElementById('gps-sel-semana');
-  if(selS) selS.innerHTML='<option value="">Todas</option>'+sems.map(s=>`<option value="${s}">Semana ${s}</option>`).join('');
-
-  const jugs=[...new Set(GPS_ALL.map(r=>r.nombre))].filter(Boolean).sort();
-  const selJ=document.getElementById('gps-sel-jug');
-  if(selJ) selJ.innerHTML=jugs.map(j=>`<option value="${j}">${j}</option>`).join('');
-
-  renderGPSEquipo();
-}
-
-function showGPSView(vista,btn){
-  document.querySelectorAll('.gps-sub-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('gps-equipo').style.display=vista==='equipo'?'':'none';
-  document.getElementById('gps-individual').style.display=vista==='individual'?'':'none';
-  if(vista==='individual') renderGPSIndividual();
-}
-
-function semGPSColor(jug_id, metrica, valor, tipo, fecha){
-  if(valor===null||valor===undefined) return 'g';
-  const hist=GPS_ALL
-    .filter(r=>r.jugador_id===jug_id&&r.tipo_sesion===tipo&&r.fecha<fecha)
-    .sort((a,b)=>b.fecha.localeCompare(a.fecha))
-    .slice(0,4);
-  if(hist.length<2) return 'g';
-  const vals=hist.map(r=>r[metrica]).filter(v=>v!==null&&v!==undefined);
-  if(!vals.length) return 'g';
-  const avg=vals.reduce((s,v)=>s+v,0)/vals.length;
-  if(avg===0) return 'g';
-  const pct=Math.abs((valor-avg)/avg*100);
-  if(pct<=20) return 'v';
-  if(pct<=40) return 'a';
-  return 'r';
-}
-
-function semGPSJugador(jug_id, tipo, fecha){
-  const metricas=['dist_total','dist_rel','acc_dcc','hsr'];
-  const cs=metricas.map(m=>{
-    const r=GPS_ALL.find(x=>x.jugador_id===jug_id&&x.fecha===fecha&&x.tipo_sesion===tipo);
-    return r?semGPSColor(jug_id,m,r[m],tipo,fecha):'g';
-  });
-  if(cs.includes('r')) return 'r';
-  if(cs.includes('a')) return 'a';
-  if(cs.every(c=>c==='g')) return 'g';
-  return 'v';
-}
-
-function semDot(c){
-  const map={v:'sem-v',a:'sem-a',r:'sem-r',g:'sem-g'};
-  return `<span class="sem-dot ${map[c]||'sem-g'}"></span>`;
-}
-
-function gpsRecomendacion(jug_id, tipo, fecha){
-  const cur=GPS_ALL.find(r=>r.jugador_id===jug_id&&r.fecha===fecha&&r.tipo_sesion===tipo);
-  if(!cur) return '';
-  const hist=GPS_ALL
-    .filter(r=>r.jugador_id===jug_id&&r.tipo_sesion===tipo&&r.fecha<fecha)
-    .sort((a,b)=>b.fecha.localeCompare(a.fecha))
-    .slice(0,4);
-  if(hist.length<2) return '<em style="color:#aaa">Sin historial suficiente para recomendaci&#243;n.</em>';
-  const avg=k=>{const v=hist.map(r=>r[k]).filter(x=>x!==null);return v.length?v.reduce((s,x)=>s+x,0)/v.length:null;};
-  const pct=(k,v)=>avg(k)?((v-avg(k))/avg(k)*100):0;
-
-  const dPct=cur.dist_total!==null?pct('dist_total',cur.dist_total):0;
-  const aPct=cur.acc_dcc!==null?pct('acc_dcc',cur.acc_dcc):0;
-  const hPct=cur.hsr!==null?pct('hsr',cur.hsr):0;
-
-  const msgs=[];
-  if(dPct>35)  msgs.push('Reducir volumen: distancia total superior al promedio reciente');
-  else if(dPct<-35) msgs.push('Controlar subcarga: distancia muy por debajo del promedio');
-  if(aPct>40)  msgs.push('Controlar ACC+DCC: riesgo de sobrecarga mec&#225;nica');
-  if(hPct<-30) msgs.push('Aumentar exposici&#243;n a alta intensidad en siguiente sesi&#243;n');
-  else if(hPct>40) msgs.push('Monitorear alta intensidad: exposici&#243;n elevada');
-
-  if(!msgs.length) return '&#9989; Carga dentro del rango normal (&plusmn;20%). Mantener plan de entrenamiento.';
-  return '&#9888;&#65039; '+msgs.join(' &mdash; ')+'.';
-}
-
-function renderGPSEquipo(){
-  const fecha=document.getElementById('gps-sel-fecha')?.value;
-  const tipoFiltro=document.getElementById('gps-sel-tipo')?.value;
-  if(!fecha){
-    document.getElementById('gps-kpis').innerHTML='<p style="color:#aaa;font-size:13px">Selecciona una sesi&#243;n.</p>';
-    document.getElementById('gps-tabla-equipo').innerHTML='';
-    return;
-  }
-  let sesion=GPS_ALL.filter(r=>r.fecha===fecha);
-  if(tipoFiltro) sesion=sesion.filter(r=>r.tipo_sesion===tipoFiltro);
-  if(!sesion.length){
-    document.getElementById('gps-kpis').innerHTML='<p style="color:#aaa;font-size:13px">Sin datos para esta sesi&#243;n.</p>';
-    document.getElementById('gps-tabla-equipo').innerHTML='';
-    return;
-  }
-  const tipo=sesion[0].tipo_sesion;
-  const avg=k=>{const v=sesion.map(r=>r[k]).filter(x=>x!==null);return v.length?v.reduce((s,x)=>s+x,0)/v.length:null;};
-  const mxv=k=>{const v=sesion.map(r=>r[k]).filter(x=>x!==null);return v.length?Math.max(...v):null;};
-  const d=new Date(fecha+'T12:00:00');
-  const fLabel=d.toLocaleDateString('es-EC',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-
-  const kpis=[
-    {lbl:'Dist. Total',val:avg('dist_total'),suf:'m',dec:0},
-    {lbl:'Dist. Relativa',val:avg('dist_rel'),suf:'m/min',dec:1},
-    {lbl:'ACC+DCC prom',val:avg('acc_dcc'),suf:'',dec:0},
-    {lbl:'Alta Intens.',val:avg('hsr'),suf:'m',dec:0},
-    {lbl:'Sprints prom',val:avg('n_sprints'),suf:'',dec:1},
-    {lbl:'Top Speed MAX',val:mxv('top_speed'),suf:'km/h',dec:2},
-  ];
-  document.getElementById('gps-kpis').innerHTML=`
-    <div style="margin-bottom:14px">
-      <span style="font-size:15px;font-weight:700;color:#1a1a2e">${tipo}</span>
-      <span style="font-size:12px;color:#888;margin-left:10px">${fLabel} &bull; ${sesion.length} jugadores</span>
-    </div>
-    <div class="gps-kpi-row">
-      ${kpis.map(k=>`<div class="gps-card">
-        <div class="num">${k.val!==null?k.val.toFixed(k.dec):'&#8212;'}<span style="font-size:10px;color:#bbb;margin-left:2px">${k.suf}</span></div>
-        <div class="lbl">${k.lbl}</div>
-      </div>`).join('')}
-    </div>`;
-
-  const rows=sesion.map(r=>{
-    const sem=semGPSJugador(r.jugador_id,r.tipo_sesion,r.fecha);
-    return {...r,sem};
-  }).sort((a,b)=>{const o={r:0,a:1,v:2,g:3};return(o[a.sem]||3)-(o[b.sem]||3);});
-
-  const semLabel={v:'Verde',a:'Amarillo',r:'Rojo',g:'Sin hist.'};
-  document.getElementById('gps-tabla-equipo').innerHTML=`
-    <table class="gps-table">
-      <thead><tr>
-        <th>Estado</th><th>Jugador</th><th>Posici&#243;n</th>
-        <th>D.Total</th><th>D.Rel.</th><th>ACC+DCC</th>
-        <th>HSR&gt;16</th><th>Sprint&gt;25</th><th>Top Speed</th><th>N&#176; Spr.</th>
-      </tr></thead>
-      <tbody>${rows.map(r=>`<tr>
-        <td>${semDot(r.sem)}<span style="font-size:11px;color:#888">${semLabel[r.sem]||''}</span></td>
-        <td style="font-weight:600">${r.nombre}</td>
-        <td style="font-size:11px;color:#888">${r.posicion||'&#8212;'}</td>
-        <td>${r.dist_total!==null?r.dist_total.toFixed(0)+' m':'&#8212;'}</td>
-        <td>${r.dist_rel!==null?r.dist_rel.toFixed(1):'&#8212;'}</td>
-        <td>${r.acc_dcc!==null?r.acc_dcc:'&#8212;'}</td>
-        <td>${r.hsr!==null?r.hsr.toFixed(0)+' m':'&#8212;'}</td>
-        <td>${r.dist_sprint!==null?r.dist_sprint.toFixed(0)+' m':'&#8212;'}</td>
-        <td>${r.top_speed!==null?r.top_speed.toFixed(2)+' km/h':'&#8212;'}</td>
-        <td>${r.n_sprints!==null?r.n_sprints:'&#8212;'}</td>
-      </tr>`).join('')}</tbody>
-    </table>`;
-}
-
-function renderGPSSemana(){
-  const sem=parseInt(document.getElementById('gps-sel-semana')?.value);
-  if(!sem) return;
-  const fechas=[...new Set(GPS_ALL.filter(r=>r.semana===sem).map(r=>r.fecha))].sort();
-  if(!fechas.length) return;
-  const sel=document.getElementById('gps-sel-fecha');
-  if(sel){sel.value=fechas[fechas.length-1];}
-  renderGPSEquipo();
-}
-
-function renderGPSIndividual(){
-  const nombre=document.getElementById('gps-sel-jug')?.value;
-  const tipo=document.getElementById('gps-sel-tipo-ind')?.value||'Entrenamiento';
-  const cont=document.getElementById('gps-ind-content');
-  if(!nombre||!cont) return;
-
-  const sesiones=GPS_ALL.filter(r=>r.nombre===nombre&&r.tipo_sesion===tipo)
-    .sort((a,b)=>a.fecha.localeCompare(b.fecha));
-  if(!sesiones.length){
-    cont.innerHTML='<p style="color:#aaa;font-size:13px">Sin datos GPS para este jugador.</p>'; return;
-  }
-  const ult=sesiones[sesiones.length-1];
-  const hist=sesiones.slice(0,-1).slice(-4);
-  const avgH=k=>{const v=hist.map(r=>r[k]).filter(x=>x!==null);return v.length?v.reduce((s,x)=>s+x,0)/v.length:null;};
-  const delta=k=>{
-    const a=avgH(k);
-    if(a===null||ult[k]===null||ult[k]===undefined) return '';
-    const p=((ult[k]-a)/a*100);
-    const col=Math.abs(p)<=20?'#27ae60':Math.abs(p)<=40?'#f39c12':'#e74c3c';
-    return `<span style="color:${col};font-size:11px;font-weight:700">${p>0?'+':''}${p.toFixed(0)}%</span>`;
-  };
-  const reco=gpsRecomendacion(ult.jugador_id,tipo,ult.fecha);
-  const d=new Date(ult.fecha+'T12:00:00');
-  const fLabel=d.toLocaleDateString('es-EC',{day:'2-digit',month:'short',year:'numeric'});
-
-  const kpis=[
-    {lbl:'Dist. Total',k:'dist_total',suf:'m',dec:0},
-    {lbl:'Dist. Relativa',k:'dist_rel',suf:'m/min',dec:1},
-    {lbl:'ACC+DCC',k:'acc_dcc',suf:'',dec:0},
-    {lbl:'Alta Intens.',k:'hsr',suf:'m',dec:0},
-    {lbl:'Sprint >25',k:'dist_sprint',suf:'m',dec:0},
-    {lbl:'Top Speed',k:'top_speed',suf:'km/h',dec:2},
-    {lbl:'N&#176; Sprints',k:'n_sprints',suf:'',dec:0},
-  ];
-
-  const ult10=sesiones.slice(-10);
-  cont.innerHTML=`
-    <div style="font-size:12px;color:#888;margin-bottom:14px">
-      &#218;ltima sesi&#243;n: <strong style="color:#1a1a2e">${fLabel}</strong> &bull;
-      Semana ${ult.semana} &bull; Promedio calculado sobre &#250;ltimas ${hist.length} sesiones del mismo tipo
-    </div>
-    <div class="gps-ind-kpis">
-      ${kpis.map(k=>`<div class="gps-card">
-        <div class="num">${ult[k.k]!==null&&ult[k.k]!==undefined?Number(ult[k.k]).toFixed(k.dec):'&#8212;'}<span style="font-size:10px;color:#bbb;margin-left:2px">${k.suf}</span></div>
-        <div class="lbl">${k.lbl}</div>
-        <div class="delta">${delta(k.k)}&nbsp;</div>
-      </div>`).join('')}
-    </div>
-    <div class="gps-reco">${reco}</div>
-    <div class="gps-chart-box">
-      <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:12px">&#128200; Distancia Total (m) &#8212; &#250;ltimas ${ult10.length} sesiones</div>
-      <canvas id="gps-ch-dist" height="80"></canvas>
-    </div>
-    <div class="gps-chart-box">
-      <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:12px">&#128200; Alta Intensidad &gt;16 km/h (m)</div>
-      <canvas id="gps-ch-hsr" height="80"></canvas>
-    </div>
-    <div class="gps-chart-box">
-      <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:12px">&#128200; Aceleraciones + Desaceleraciones</div>
-      <canvas id="gps-ch-acc" height="80"></canvas>
-    </div>`;
-
-  const labels=ult10.map(r=>{const d=new Date(r.fecha+'T12:00:00');return d.toLocaleDateString('es-EC',{day:'2-digit',month:'short'});});
-  const colores=ult10.map((_,i)=>i===ult10.length-1?'rgba(192,57,43,.9)':'rgba(123,28,28,.35)');
-
-  const mkChart=(id,datos,label)=>{
-    const ctx=document.getElementById(id);
-    if(!ctx) return;
-    if(_gpsCharts[id]){_gpsCharts[id].destroy();}
-    _gpsCharts[id]=new Chart(ctx,{
-      type:'bar',
-      data:{labels,datasets:[{label,data:datos,backgroundColor:colores,borderRadius:4}]},
-      options:{
-        plugins:{legend:{display:false}},
-        scales:{
-          y:{beginAtZero:false,grid:{color:'#f5f5f5'},ticks:{font:{size:10}}},
-          x:{grid:{display:false},ticks:{font:{size:10}}}
-        }
-      }
-    });
-  };
-  mkChart('gps-ch-dist',ult10.map(r=>r.dist_total),'Dist. total');
-  mkChart('gps-ch-hsr', ult10.map(r=>r.hsr),'HSR >16km/h');
-  mkChart('gps-ch-acc', ult10.map(r=>r.acc_dcc),'ACC+DCC');
-}
-
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -2499,6 +2204,302 @@ showTab = function(id, btn){
   _origShowTab(id, btn);
   if(id === 'admin') renderAdminPanel();
 };
+
+
+// ── GPS Module ─────────────────────────────────────────────────
+let GPS_ALL = [];
+let GPS_LOADED = false;
+let _gpsLoading = false;
+let _gpsCharts = {};
+
+async function cargarDatosGPS(){
+  if(GPS_LOADED || _gpsLoading) return;
+  _gpsLoading = true;
+
+  // Mostrar indicador de carga si el tab GPS está visible
+  const kpisEl = document.getElementById('gps-kpis');
+  if(kpisEl) kpisEl.innerHTML = '<p style="color:#aaa;font-size:13px">&#9203; Cargando datos GPS...</p>';
+
+  try{
+    // Cargar en dos lotes para superar el límite de 1000 filas de Supabase
+    const [r1, r2] = await Promise.all([
+      sb.from('gps_sesiones').select('*, jugadores(nombre,posicion)')
+        .order('fecha',{ascending:true}).range(0, 999),
+      sb.from('gps_sesiones').select('*, jugadores(nombre,posicion)')
+        .order('fecha',{ascending:true}).range(1000, 2999)
+    ]);
+    const data = [...(r1.data||[]), ...(r2.data||[])];
+    if(!data.length){ _gpsLoading=false; return; }
+    GPS_ALL = data.map(r=>({
+      ...r,
+      nombre: r.jugadores?.nombre || '',
+      posicion: r.jugadores?.posicion || ''
+    }));
+    GPS_LOADED = true;
+    populateGPSFiltros();
+  } catch(e){
+    console.error('GPS load:',e);
+    if(kpisEl) kpisEl.innerHTML = '<p style="color:#e74c3c;font-size:13px">Error cargando datos GPS. Recarga la p&#225;gina.</p>';
+  } finally {
+    _gpsLoading = false;
+  }
+}
+
+function populateGPSFiltros(){
+  const fechas=[...new Set(GPS_ALL.map(r=>r.fecha))].sort().reverse();
+  const selF=document.getElementById('gps-sel-fecha');
+  if(!selF) return;
+  selF.innerHTML=fechas.map(f=>{
+    const tipo=GPS_ALL.find(r=>r.fecha===f)?.tipo_sesion||'';
+    const d=new Date(f+'T12:00:00');
+    const label=d.toLocaleDateString('es-EC',{day:'2-digit',month:'short'})+' — '+tipo;
+    return `<option value="${f}">${label}</option>`;
+  }).join('');
+
+  const sems=[...new Set(GPS_ALL.map(r=>r.semana).filter(Boolean))].sort((a,b)=>b-a);
+  const selS=document.getElementById('gps-sel-semana');
+  if(selS) selS.innerHTML='<option value="">Todas</option>'+sems.map(s=>`<option value="${s}">Semana ${s}</option>`).join('');
+
+  const jugs=[...new Set(GPS_ALL.map(r=>r.nombre))].filter(Boolean).sort();
+  const selJ=document.getElementById('gps-sel-jug');
+  if(selJ) selJ.innerHTML=jugs.map(j=>`<option value="${j}">${j}</option>`).join('');
+
+  renderGPSEquipo();
+}
+
+function showGPSView(vista,btn){
+  document.querySelectorAll('.gps-sub-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('gps-equipo').style.display=vista==='equipo'?'':'none';
+  document.getElementById('gps-individual').style.display=vista==='individual'?'':'none';
+  if(vista==='individual') renderGPSIndividual();
+}
+
+function semGPSColor(jug_id, metrica, valor, tipo, fecha){
+  if(valor===null||valor===undefined) return 'g';
+  const hist=GPS_ALL
+    .filter(r=>r.jugador_id===jug_id&&r.tipo_sesion===tipo&&r.fecha<fecha)
+    .sort((a,b)=>b.fecha.localeCompare(a.fecha))
+    .slice(0,4);
+  if(hist.length<2) return 'g';
+  const vals=hist.map(r=>r[metrica]).filter(v=>v!==null&&v!==undefined);
+  if(!vals.length) return 'g';
+  const avg=vals.reduce((s,v)=>s+v,0)/vals.length;
+  if(avg===0) return 'g';
+  const pct=Math.abs((valor-avg)/avg*100);
+  if(pct<=20) return 'v';
+  if(pct<=40) return 'a';
+  return 'r';
+}
+
+function semGPSJugador(jug_id, tipo, fecha){
+  const metricas=['dist_total','dist_rel','acc_dcc','hsr'];
+  const cs=metricas.map(m=>{
+    const r=GPS_ALL.find(x=>x.jugador_id===jug_id&&x.fecha===fecha&&x.tipo_sesion===tipo);
+    return r?semGPSColor(jug_id,m,r[m],tipo,fecha):'g';
+  });
+  if(cs.includes('r')) return 'r';
+  if(cs.includes('a')) return 'a';
+  if(cs.every(c=>c==='g')) return 'g';
+  return 'v';
+}
+
+function semDot(c){
+  const map={v:'sem-v',a:'sem-a',r:'sem-r',g:'sem-g'};
+  return `<span class="sem-dot ${map[c]||'sem-g'}"></span>`;
+}
+
+function gpsRecomendacion(jug_id, tipo, fecha){
+  const cur=GPS_ALL.find(r=>r.jugador_id===jug_id&&r.fecha===fecha&&r.tipo_sesion===tipo);
+  if(!cur) return '';
+  const hist=GPS_ALL
+    .filter(r=>r.jugador_id===jug_id&&r.tipo_sesion===tipo&&r.fecha<fecha)
+    .sort((a,b)=>b.fecha.localeCompare(a.fecha))
+    .slice(0,4);
+  if(hist.length<2) return '<em style="color:#aaa">Sin historial suficiente para recomendaci&#243;n.</em>';
+  const avg=k=>{const v=hist.map(r=>r[k]).filter(x=>x!==null);return v.length?v.reduce((s,x)=>s+x,0)/v.length:null;};
+  const pct=(k,v)=>avg(k)?((v-avg(k))/avg(k)*100):0;
+
+  const dPct=cur.dist_total!==null?pct('dist_total',cur.dist_total):0;
+  const aPct=cur.acc_dcc!==null?pct('acc_dcc',cur.acc_dcc):0;
+  const hPct=cur.hsr!==null?pct('hsr',cur.hsr):0;
+
+  const msgs=[];
+  if(dPct>35)  msgs.push('Reducir volumen: distancia total superior al promedio reciente');
+  else if(dPct<-35) msgs.push('Controlar subcarga: distancia muy por debajo del promedio');
+  if(aPct>40)  msgs.push('Controlar ACC+DCC: riesgo de sobrecarga mec&#225;nica');
+  if(hPct<-30) msgs.push('Aumentar exposici&#243;n a alta intensidad en siguiente sesi&#243;n');
+  else if(hPct>40) msgs.push('Monitorear alta intensidad: exposici&#243;n elevada');
+
+  if(!msgs.length) return '&#9989; Carga dentro del rango normal (&plusmn;20%). Mantener plan de entrenamiento.';
+  return '&#9888;&#65039; '+msgs.join(' &mdash; ')+'.';
+}
+
+function renderGPSEquipo(){
+  const fecha=document.getElementById('gps-sel-fecha')?.value;
+  const tipoFiltro=document.getElementById('gps-sel-tipo')?.value;
+  if(!fecha){
+    document.getElementById('gps-kpis').innerHTML='<p style="color:#aaa;font-size:13px">Selecciona una sesi&#243;n.</p>';
+    document.getElementById('gps-tabla-equipo').innerHTML='';
+    return;
+  }
+  let sesion=GPS_ALL.filter(r=>r.fecha===fecha);
+  if(tipoFiltro) sesion=sesion.filter(r=>r.tipo_sesion===tipoFiltro);
+  if(!sesion.length){
+    document.getElementById('gps-kpis').innerHTML='<p style="color:#aaa;font-size:13px">Sin datos para esta sesi&#243;n.</p>';
+    document.getElementById('gps-tabla-equipo').innerHTML='';
+    return;
+  }
+  const tipo=sesion[0].tipo_sesion;
+  const avg=k=>{const v=sesion.map(r=>r[k]).filter(x=>x!==null);return v.length?v.reduce((s,x)=>s+x,0)/v.length:null;};
+  const mxv=k=>{const v=sesion.map(r=>r[k]).filter(x=>x!==null);return v.length?Math.max(...v):null;};
+  const d=new Date(fecha+'T12:00:00');
+  const fLabel=d.toLocaleDateString('es-EC',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  const kpis=[
+    {lbl:'Dist. Total',val:avg('dist_total'),suf:'m',dec:0},
+    {lbl:'Dist. Relativa',val:avg('dist_rel'),suf:'m/min',dec:1},
+    {lbl:'ACC+DCC prom',val:avg('acc_dcc'),suf:'',dec:0},
+    {lbl:'Alta Intens.',val:avg('hsr'),suf:'m',dec:0},
+    {lbl:'Sprints prom',val:avg('n_sprints'),suf:'',dec:1},
+    {lbl:'Top Speed MAX',val:mxv('top_speed'),suf:'km/h',dec:2},
+  ];
+  document.getElementById('gps-kpis').innerHTML=`
+    <div style="margin-bottom:14px">
+      <span style="font-size:15px;font-weight:700;color:#1a1a2e">${tipo}</span>
+      <span style="font-size:12px;color:#888;margin-left:10px">${fLabel} &bull; ${sesion.length} jugadores</span>
+    </div>
+    <div class="gps-kpi-row">
+      ${kpis.map(k=>`<div class="gps-card">
+        <div class="num">${k.val!==null?k.val.toFixed(k.dec):'&#8212;'}<span style="font-size:10px;color:#bbb;margin-left:2px">${k.suf}</span></div>
+        <div class="lbl">${k.lbl}</div>
+      </div>`).join('')}
+    </div>`;
+
+  const rows=sesion.map(r=>{
+    const sem=semGPSJugador(r.jugador_id,r.tipo_sesion,r.fecha);
+    return {...r,sem};
+  }).sort((a,b)=>{const o={r:0,a:1,v:2,g:3};return(o[a.sem]||3)-(o[b.sem]||3);});
+
+  const semLabel={v:'Verde',a:'Amarillo',r:'Rojo',g:'Sin hist.'};
+  document.getElementById('gps-tabla-equipo').innerHTML=`
+    <table class="gps-table">
+      <thead><tr>
+        <th>Estado</th><th>Jugador</th><th>Posici&#243;n</th>
+        <th>D.Total</th><th>D.Rel.</th><th>ACC+DCC</th>
+        <th>HSR&gt;16</th><th>Sprint&gt;25</th><th>Top Speed</th><th>N&#176; Spr.</th>
+      </tr></thead>
+      <tbody>${rows.map(r=>`<tr>
+        <td>${semDot(r.sem)}<span style="font-size:11px;color:#888">${semLabel[r.sem]||''}</span></td>
+        <td style="font-weight:600">${r.nombre}</td>
+        <td style="font-size:11px;color:#888">${r.posicion||'&#8212;'}</td>
+        <td>${r.dist_total!==null?r.dist_total.toFixed(0)+' m':'&#8212;'}</td>
+        <td>${r.dist_rel!==null?r.dist_rel.toFixed(1):'&#8212;'}</td>
+        <td>${r.acc_dcc!==null?r.acc_dcc:'&#8212;'}</td>
+        <td>${r.hsr!==null?r.hsr.toFixed(0)+' m':'&#8212;'}</td>
+        <td>${r.dist_sprint!==null?r.dist_sprint.toFixed(0)+' m':'&#8212;'}</td>
+        <td>${r.top_speed!==null?r.top_speed.toFixed(2)+' km/h':'&#8212;'}</td>
+        <td>${r.n_sprints!==null?r.n_sprints:'&#8212;'}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+}
+
+function renderGPSSemana(){
+  const sem=parseInt(document.getElementById('gps-sel-semana')?.value);
+  if(!sem) return;
+  const fechas=[...new Set(GPS_ALL.filter(r=>r.semana===sem).map(r=>r.fecha))].sort();
+  if(!fechas.length) return;
+  const sel=document.getElementById('gps-sel-fecha');
+  if(sel){sel.value=fechas[fechas.length-1];}
+  renderGPSEquipo();
+}
+
+function renderGPSIndividual(){
+  const nombre=document.getElementById('gps-sel-jug')?.value;
+  const tipo=document.getElementById('gps-sel-tipo-ind')?.value||'Entrenamiento';
+  const cont=document.getElementById('gps-ind-content');
+  if(!nombre||!cont) return;
+
+  const sesiones=GPS_ALL.filter(r=>r.nombre===nombre&&r.tipo_sesion===tipo)
+    .sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  if(!sesiones.length){
+    cont.innerHTML='<p style="color:#aaa;font-size:13px">Sin datos GPS para este jugador.</p>'; return;
+  }
+  const ult=sesiones[sesiones.length-1];
+  const hist=sesiones.slice(0,-1).slice(-4);
+  const avgH=k=>{const v=hist.map(r=>r[k]).filter(x=>x!==null);return v.length?v.reduce((s,x)=>s+x,0)/v.length:null;};
+  const delta=k=>{
+    const a=avgH(k);
+    if(a===null||ult[k]===null||ult[k]===undefined) return '';
+    const p=((ult[k]-a)/a*100);
+    const col=Math.abs(p)<=20?'#27ae60':Math.abs(p)<=40?'#f39c12':'#e74c3c';
+    return `<span style="color:${col};font-size:11px;font-weight:700">${p>0?'+':''}${p.toFixed(0)}%</span>`;
+  };
+  const reco=gpsRecomendacion(ult.jugador_id,tipo,ult.fecha);
+  const d=new Date(ult.fecha+'T12:00:00');
+  const fLabel=d.toLocaleDateString('es-EC',{day:'2-digit',month:'short',year:'numeric'});
+
+  const kpis=[
+    {lbl:'Dist. Total',k:'dist_total',suf:'m',dec:0},
+    {lbl:'Dist. Relativa',k:'dist_rel',suf:'m/min',dec:1},
+    {lbl:'ACC+DCC',k:'acc_dcc',suf:'',dec:0},
+    {lbl:'Alta Intens.',k:'hsr',suf:'m',dec:0},
+    {lbl:'Sprint >25',k:'dist_sprint',suf:'m',dec:0},
+    {lbl:'Top Speed',k:'top_speed',suf:'km/h',dec:2},
+    {lbl:'N&#176; Sprints',k:'n_sprints',suf:'',dec:0},
+  ];
+
+  const ult10=sesiones.slice(-10);
+  cont.innerHTML=`
+    <div style="font-size:12px;color:#888;margin-bottom:14px">
+      &#218;ltima sesi&#243;n: <strong style="color:#1a1a2e">${fLabel}</strong> &bull;
+      Semana ${ult.semana} &bull; Promedio calculado sobre &#250;ltimas ${hist.length} sesiones del mismo tipo
+    </div>
+    <div class="gps-ind-kpis">
+      ${kpis.map(k=>`<div class="gps-card">
+        <div class="num">${ult[k.k]!==null&&ult[k.k]!==undefined?Number(ult[k.k]).toFixed(k.dec):'&#8212;'}<span style="font-size:10px;color:#bbb;margin-left:2px">${k.suf}</span></div>
+        <div class="lbl">${k.lbl}</div>
+        <div class="delta">${delta(k.k)}&nbsp;</div>
+      </div>`).join('')}
+    </div>
+    <div class="gps-reco">${reco}</div>
+    <div class="gps-chart-box">
+      <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:12px">&#128200; Distancia Total (m) &#8212; &#250;ltimas ${ult10.length} sesiones</div>
+      <canvas id="gps-ch-dist" height="80"></canvas>
+    </div>
+    <div class="gps-chart-box">
+      <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:12px">&#128200; Alta Intensidad &gt;16 km/h (m)</div>
+      <canvas id="gps-ch-hsr" height="80"></canvas>
+    </div>
+    <div class="gps-chart-box">
+      <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:12px">&#128200; Aceleraciones + Desaceleraciones</div>
+      <canvas id="gps-ch-acc" height="80"></canvas>
+    </div>`;
+
+  const labels=ult10.map(r=>{const d=new Date(r.fecha+'T12:00:00');return d.toLocaleDateString('es-EC',{day:'2-digit',month:'short'});});
+  const colores=ult10.map((_,i)=>i===ult10.length-1?'rgba(192,57,43,.9)':'rgba(123,28,28,.35)');
+
+  const mkChart=(id,datos,label)=>{
+    const ctx=document.getElementById(id);
+    if(!ctx) return;
+    if(_gpsCharts[id]){_gpsCharts[id].destroy();}
+    _gpsCharts[id]=new Chart(ctx,{
+      type:'bar',
+      data:{labels,datasets:[{label,data:datos,backgroundColor:colores,borderRadius:4}]},
+      options:{
+        plugins:{legend:{display:false}},
+        scales:{
+          y:{beginAtZero:false,grid:{color:'#f5f5f5'},ticks:{font:{size:10}}},
+          x:{grid:{display:false},ticks:{font:{size:10}}}
+        }
+      }
+    });
+  };
+  mkChart('gps-ch-dist',ult10.map(r=>r.dist_total),'Dist. total');
+  mkChart('gps-ch-hsr', ult10.map(r=>r.hsr),'HSR >16km/h');
+  mkChart('gps-ch-acc', ult10.map(r=>r.acc_dcc),'ACC+DCC');
+}
+
 
 </script>
 </body>
