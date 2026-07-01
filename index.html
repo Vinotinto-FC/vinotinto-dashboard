@@ -2225,14 +2225,16 @@ async function cargarDatosGPS(){
   if(kpisEl) kpisEl.innerHTML = '<p style="color:#aaa;font-size:13px">&#9203; Cargando datos GPS...</p>';
 
   try{
-    // Cargar en dos lotes para superar el límite de 1000 filas de Supabase
-    const [r1, r2] = await Promise.all([
-      sb.from('gps_sesiones').select('*, jugadores(nombre,posicion)')
-        .order('fecha',{ascending:true}).range(0, 999),
-      sb.from('gps_sesiones').select('*, jugadores(nombre,posicion)')
-        .order('fecha',{ascending:true}).range(1000, 2999)
-    ]);
-    const data = [...(r1.data||[]), ...(r2.data||[])];
+    // Cargar en lotes de 1000 para superar el límite de Supabase
+    let data = [], from = 0;
+    while(true){
+      const r = await sb.from('gps_sesiones').select('*, jugadores(nombre,posicion)')
+        .order('fecha',{ascending:true}).range(from, from+999);
+      if(!r.data||!r.data.length) break;
+      data = data.concat(r.data);
+      if(r.data.length < 1000) break;
+      from += 1000;
+    }
     if(!data.length){ _gpsLoading=false; return; }
     GPS_ALL = data.map(r=>({
       ...r,
